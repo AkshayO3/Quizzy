@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quiz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+    <style>
+        header {
+            font-size: 2em;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+            background-color:#ff6347;
+            color: #f5f5f5;
+            font-family: 'Orbitron', sans-serif; /* Use the Orbitron font */
+        }
+        footer {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            padding: 10px;
+            background-color: #ff6347;
+            color: #f5f5f5;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #f5f5f5;
+            font-family: 'Arial', sans-serif;
+        }
+        h1 {
+            font-size: 2.5em;
+            text-align: center;
+            margin-top: 5%;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        input[type="checkbox"] {
+            margin: 10px;
+        }
+        button {
+            width: 30%;
+            padding: 10px;
+            font-size: 1em;
+            color: #f5f5f5;
+            background-color: #ff6347;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: red;
+        }
+        #question {
+            margin-top: 5%;
+            font-weight: bold;
+            margin-left: 10%;
+            margin-right: 10%;
+            font-size: 1.5em;
+        }
+        .option-block {
+            background-color: #808080;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .option-block.selected {
+            background-color: darkgreen;
+        }
+        .block{
+            margin-top: 5%;
+            margin-left: 10%;
+            margin-right: 10%;
+        }
+    </style>
+    <script>
+        function submitForm(e) {
+            e.preventDefault();
+            const form = e.target;
+            const selectedOptions = form.querySelectorAll('.option-block.selected');
+            if (selectedOptions.length === 0) {
+                alert('Please select at least one option before submitting.');
+                return;
+            }
+            selectedOptions.forEach(optionBlock => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'answer';
+                hiddenInput.value = optionBlock.dataset.value;
+                form.appendChild(hiddenInput);
+            });
+            form.submit();
+        }
+
+        function toggleOption(e) {
+            e.currentTarget.classList.toggle('selected');
+        }
+    </script>
+</head>
+<body>
+<header>
+    Quizzy --> My personal Quiz Companion
+</header>
+<form action="/submit" method="POST" onsubmit="submitForm(event)">
+    <% let x = question.question.split(/A\. |B\. |C\. |D\. |E\./) %>
+    <div id="question"><%= x[0] %></div>
+    <div class="block">
+    <% for(let i = 1; i < x.length; i++) { %>
+        <div class="option-block" data-value="<%= String.fromCharCode(64 + i) %>" onclick="toggleOption(event)">
+            <label><%= String.fromCharCode(64 + i) %>. <%= x[i] %></label>
+        </div>
+    <% } %>
+    <input type="hidden" name="name" value="<%= name %>">
+    <button type="submit">Submit</button>
+    </div>
+</form>
+<footer>
+    Created by Akshay in under 12 hours.
+</footer>
+</body>
+</html>
