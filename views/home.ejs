@@ -26,7 +26,7 @@
             flex-direction: column;
             align-items: center;
         }
-        input[type="text"] {
+        input,select {
             width: 60%;
             padding: 10px;
             margin-bottom: 2%;
@@ -81,6 +81,12 @@
         place and time that the tide will turn.</h2>
     <form action="/start" method="POST">
         <input type="text" name="name" placeholder="Enter your username">
+        <input  type="number" name="total" placeholder="Enter total number of questions.">
+        <select name="set" required>
+            <option selected disabled>Select an option</option>
+            <option value="clf">AWS Certified Cloud Practitioner [CLF-C02]</option>
+            <option value="dva">AWS Certified Developer - Associate [DVA-C02]</option>
+        </select>
         <button type="submit">Start Quiz</button>
     </form>
 </body>

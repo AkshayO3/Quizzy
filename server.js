@@ -17,6 +17,22 @@ function arraysAreEqual(array1, array2) {
     }
     return array1.every((value, index) => value === array2[index]);
 }
+function question_addition(set) {
+    if(set==="dva")
+        return Dev
+    if(set==="clf")
+        return Practitioner
+}
+async function questions_selection(set,number) {
+    let x;
+    if (set === "dva") {
+        x = await Dev.aggregate([{$sample: {size: parseInt(number)}}]);
+    }
+    if(set === "clf") {
+        x = await Practitioner.aggregate([{$sample: {size: parseInt(number)}}])
+    }
+    return x;
+}
 
 mongoose.connect(process.env.URI).then(() => {
     console.log("Connected to the database.")
@@ -31,9 +47,13 @@ const attemptSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    set: {
+        type:String,
+        required: true
+    },
     questionIds: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Question'
+        refPath: 'set'
     }],
     currentQuestionIndex: {
         type: Number,
@@ -52,22 +72,20 @@ const attemptSchema = new mongoose.Schema({
         default:0
     }
 });
-const userSchema = new mongoose.Schema({
-    name: String
-})
 
-const Question = mongoose.model('Question',questionSchema)
+const Dev = mongoose.model('Dev',questionSchema)
 const Attempt = mongoose.model('Attempt', attemptSchema);
-const User = mongoose.model('User',userSchema)
+const Practitioner = mongoose.model('Practitioner',questionSchema)
 
 
 app.post('/create', async (req, res) => {
-    const { question, answer } = req.body;
+    const { question, answer, set } = req.body;
     const answers = answer.split(','); // split the string into an array of answers
-    const newQuestion = new Question({
+    let x = question_addition(set)
+    const newQuestion = new x({
         question: question,
         answer: answers
-    });
+    })
     try {
         await newQuestion.save();
         res.status(201).json(newQuestion);
@@ -81,31 +99,35 @@ app.get("/",(req,res)=>{
 })
 app.post('/start', async (req, res) => {
     const name  = req.body.name;
-    const questions = await Question.aggregate([{ $sample: { size: 5 } }]);
+    const set = req.body.set;
+    const total = req.body.total;
+    const questions = await questions_selection(set,total)
     const questionIds = questions.map(question => question._id);
-    const existingAttempt = await Attempt.findOne({ userName: name }).sort({ attemptNo: -1 });
+    const existingAttempt = await Attempt.findOne({ userName: name,set:set }).sort({ attemptNo: -1 });
     const attemptNo = existingAttempt ? existingAttempt.attemptNo + 1 : 1;
-    const attempt = new Attempt({ userName: name, questionIds, attemptNo });
+    const attempt = new Attempt({ userName: name, set:set,questionIds, attemptNo });
     await attempt.save();
-    res.redirect(`/submit?name=${name}`)
+    res.redirect(`/submit?name=${name}&set=${set}`)
 });
 app.get('/submit', async (req, res) => {
-    const name = req.query.name;
-    const attempt = await Attempt.findOne({ userName:name, isActive: true });
+    let {name,set} = req.query;
+    let x=question_addition(set)
+    const attempt = await Attempt.findOne({ userName:name, set:set, isActive: true });
     if (!attempt) {
         return res.status(400).json({ message: 'No active attempt found for this user' });
     }
-    const question = await Question.findById(attempt.questionIds[attempt.currentQuestionIndex]);
-    res.render('quiz', { question,name });
+    const question = await x.findById(attempt.questionIds[attempt.currentQuestionIndex]);
+    res.render('quiz', { question,name,set });
 });
 
 app.post('/submit', async (req, res) => {
-    const { name, answer } = req.body;
-    const attempt = await Attempt.findOne({ userName:name, isActive: true })
+    const { name, answer,set } = req.body;
+    let x = question_addition(set)
+    const attempt = await Attempt.findOne({ userName:name, set:set, isActive: true })
     if (!attempt) {
         return res.status(400).json({ message: 'No active attempt found for this user' });
     }
-    const question = await Question.findById(attempt.questionIds[attempt.currentQuestionIndex]);
+    const question = await x.findById(attempt.questionIds[attempt.currentQuestionIndex]);
     if (arraysAreEqual(question.answer, answer)) {
         attempt.score += 1;
     }
@@ -116,8 +138,8 @@ app.post('/submit', async (req, res) => {
         res.render('final',{name,score:attempt.score})
     } else {
         await attempt.save();
-        const nextQuestion = await Question.findById(attempt.questionIds[attempt.currentQuestionIndex]);
-        res.render('quiz',{question:nextQuestion,name})
+        const nextQuestion = await x.findById(attempt.questionIds[attempt.currentQuestionIndex]);
+        res.render('quiz',{question:nextQuestion,name,set})
     }
 });
 
